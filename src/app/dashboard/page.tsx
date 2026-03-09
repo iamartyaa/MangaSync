@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import PanelSelector from "@/components/PanelSelector";
+import PanelUploader from "@/components/PanelUploader";
 import MangaViewer from "@/components/MangaViewer";
 import NarrationPlayer from "@/components/NarrationPlayer";
 import type { MangaPanel } from "@/data/mockPanels";
@@ -19,7 +20,7 @@ const TARGET_LANGUAGES = [
  * MangaSync Dashboard — The Core Translation & Narration Cockpit
  *
  * Flow:
- * 1. Select a manga panel from the grid
+ * 1. Select a demo panel OR upload your own manga panel
  * 2. Choose target language
  * 3. Click "Translate" → calls /api/translate
  * 4. View translated bubbles overlaid on the panel
@@ -28,6 +29,8 @@ const TARGET_LANGUAGES = [
 export default function DashboardPage() {
   // ── State ───────────────────────────────────────────────────────────────
   const [selectedPanel, setSelectedPanel] = useState<MangaPanel | null>(null);
+  const [isCustomPanel, setIsCustomPanel] = useState(false);
+  const [customPanels, setCustomPanels] = useState<MangaPanel[]>([]);
   const [targetLocale, setTargetLocale] = useState("en");
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [isTranslating, setIsTranslating] = useState(false);
@@ -37,9 +40,21 @@ export default function DashboardPage() {
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
-  /** Select a panel and reset translation state */
+  /** Select a demo panel and reset translation state */
   const handlePanelSelect = useCallback((panel: MangaPanel) => {
     setSelectedPanel(panel);
+    setIsCustomPanel(false);
+    setTranslations({});
+    setActiveBubbleId(null);
+    setError(null);
+    setTranslationComplete(false);
+  }, []);
+
+  /** Handle an uploaded panel from PanelUploader */
+  const handlePanelExtracted = useCallback((panel: MangaPanel) => {
+    setCustomPanels((prev) => [...prev, panel]);
+    setSelectedPanel(panel);
+    setIsCustomPanel(true);
     setTranslations({});
     setActiveBubbleId(null);
     setError(null);
@@ -56,13 +71,15 @@ export default function DashboardPage() {
     setTranslationComplete(false);
 
     try {
+      // Build request body — custom panels send full data, demo panels send ID
+      const requestBody = isCustomPanel
+        ? { customPanel: selectedPanel, targetLocale }
+        : { panelId: selectedPanel.panel_id, targetLocale };
+
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          panelId: selectedPanel.panel_id,
-          targetLocale,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json();
@@ -85,7 +102,7 @@ export default function DashboardPage() {
     } finally {
       setIsTranslating(false);
     }
-  }, [selectedPanel, targetLocale]);
+  }, [selectedPanel, isCustomPanel, targetLocale]);
 
   /** Narration callbacks */
   const handleBubbleStart = useCallback((bubbleId: string) => {
@@ -125,21 +142,96 @@ export default function DashboardPage() {
             Translation Studio
           </h1>
           <p className="text-manga-black/60 text-base">
-            Select a manga panel, choose your target language, and watch
-            Lingo.dev translate with full character context.
+            Select a demo panel or upload your own — GPT-4o Vision detects
+            bubbles, Lingo.dev translates with full context.
           </p>
         </div>
 
-        {/* ── Panel Selector ─────────────────────────────────────────── */}
-        <section className="mb-8">
-          <h2 className="font-[family-name:var(--font-display)] font-bold text-sm uppercase tracking-widest text-manga-muted mb-4">
-            Select a Panel
-          </h2>
-          <PanelSelector
-            selectedPanelId={selectedPanel?.panel_id ?? null}
-            onSelect={handlePanelSelect}
-          />
-        </section>
+        {/* ── Panel Selection Row ────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          {/* Demo panels (3 cols) */}
+          <div className="lg:col-span-3">
+            <h2 className="font-[family-name:var(--font-display)] font-bold text-sm uppercase tracking-widest text-manga-muted mb-4">
+              Demo Panels
+            </h2>
+            <PanelSelector
+              selectedPanelId={selectedPanel?.panel_id ?? null}
+              onSelect={handlePanelSelect}
+            />
+
+            {/* Custom uploaded panels row */}
+            {customPanels.length > 0 && (
+              <div className="mt-4">
+                <h2 className="font-[family-name:var(--font-display)] font-bold text-sm uppercase tracking-widest text-manga-purple mb-3">
+                  Your Uploaded Panels
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {customPanels.map((panel) => {
+                    const isSelected =
+                      selectedPanel?.panel_id === panel.panel_id;
+                    return (
+                      <button
+                        key={panel.panel_id}
+                        onClick={() => {
+                          setSelectedPanel(panel);
+                          setIsCustomPanel(true);
+                          setTranslations({});
+                          setTranslationComplete(false);
+                          setError(null);
+                        }}
+                        className={`
+                          group relative brutal-border p-3 text-left
+                          transition-all duration-200 cursor-pointer
+                          ${
+                            isSelected
+                              ? "bg-manga-purple text-manga-white brutal-shadow scale-[1.02]"
+                              : "bg-manga-white text-manga-black brutal-shadow brutal-hover"
+                          }
+                        `}
+                      >
+                        <div className="relative w-full aspect-[4/3] brutal-border overflow-hidden mb-3 bg-manga-dark">
+                          <img
+                            src={panel.image_url}
+                            alt={panel.series_title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <h3 className="font-[family-name:var(--font-display)] font-bold text-sm leading-tight">
+                          {panel.series_title}
+                        </h3>
+                        <p
+                          className={`text-xs mt-1 font-mono ${
+                            isSelected
+                              ? "text-manga-white/70"
+                              : "text-manga-muted"
+                          }`}
+                        >
+                          {panel.bubbles.length} bubble
+                          {panel.bubbles.length !== 1 ? "s" : ""} · uploaded
+                        </p>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-manga-yellow brutal-border flex items-center justify-center">
+                            <span className="text-manga-black text-xs font-bold">
+                              ✓
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Upload panel (1 col) */}
+          <div className="lg:col-span-1">
+            <h2 className="font-[family-name:var(--font-display)] font-bold text-sm uppercase tracking-widest text-manga-muted mb-4">
+              Custom Upload
+            </h2>
+            <PanelUploader onPanelExtracted={handlePanelExtracted} />
+          </div>
+        </div>
 
         {/* ── Main Workspace ─────────────────────────────────────────── */}
         {selectedPanel && (
@@ -156,9 +248,18 @@ export default function DashboardPage() {
 
               {/* Context info bar */}
               <div className="brutal-border bg-manga-dark text-manga-cream p-4">
-                <h3 className="font-[family-name:var(--font-display)] font-bold text-xs uppercase tracking-widest text-manga-yellow mb-2">
-                  MCP Context Prompt
-                </h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-[family-name:var(--font-display)] font-bold text-xs uppercase tracking-widest text-manga-yellow">
+                    {isCustomPanel
+                      ? "AI-Detected Context"
+                      : "MCP Context Prompt"}
+                  </h3>
+                  {isCustomPanel && (
+                    <span className="px-2 py-0.5 text-[10px] font-mono bg-manga-purple/30 text-manga-purple rounded-sm">
+                      GPT-4o Vision
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-manga-cream/70 leading-relaxed font-mono">
                   {selectedPanel.manga_context}
                 </p>
@@ -288,8 +389,8 @@ export default function DashboardPage() {
               Select a Panel to Begin
             </h2>
             <p className="text-manga-muted text-sm">
-              Choose a manga panel from above to start the translation and
-              narration engine.
+              Choose a demo panel or upload your own to start the translation
+              and narration engine.
             </p>
           </div>
         )}
