@@ -13,6 +13,5 @@ export default async function (): Promise<NextConfig> {
     sourceLocale: "en",
     targetLocales: ["ja", "es", "fr"],
     models: "lingo.dev",
-    dev: { usePseudotranslator: true },
   });
 }
