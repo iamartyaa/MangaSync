@@ -65,44 +65,44 @@ export async function extractBubblesFromImage(
     messages: [
       {
         role: "system",
-        content: `You are a manga panel analyzer. You analyze manga/comic images and extract speech bubble data.
+        content: `You are a precision manga panel analyzer. You analyze manga/comic images and extract speech bubble data with EXACT coordinate mapping. THIS IS CRITICAL for overlaying translated text directly onto the image.
 
 Your task:
-1. Identify ALL speech bubbles and thought bubbles visible in the panel
-2. For each bubble, estimate its bounding box as PERCENTAGES of the total image dimensions
-3. Extract the text inside each bubble exactly as written (preserve the original language)
-4. Infer the emotional context: who is speaking, what tone/mood, what series genre
+1. Identify ALL speech bubbles, thought bubbles, and floating text visible in the panel.
+2. For each bubble, calculate its EXACT bounding box as PERCENTAGES (0-100) of the total image dimensions.
+3. Extract the text inside each bubble exactly as written (preserve the original language).
+4. Infer the emotional context: who is speaking, what tone/mood, what series genre.
 
 Return ONLY valid JSON with this exact structure:
 {
   "bubbles": [
     {
       "id": "b1",
-      "x": <left edge as percentage 0-100>,
-      "y": <top edge as percentage 0-100>,
-      "w": <width as percentage 0-100>,
-      "h": <height as percentage 0-100>,
+      "x": <left edge of the graphic bubble as percentage 0-100>,
+      "y": <top edge of the graphic bubble as percentage 0-100>,
+      "w": <width of the graphic bubble as percentage 0-100>,
+      "h": <height of the graphic bubble as percentage 0-100>,
       "original_text": "<exact text from the bubble>"
     }
   ],
-  "manga_context": "<A rich, detailed description of the scene for a translator. Include: the genre/tone of the manga, who appears to be speaking, their emotional state, any visual cues about the intensity of the scene. Write this as translation instructions that preserve the original feeling. Be vivid and specific — do NOT write generic instructions.>",
+  "manga_context": "<A rich, detailed description of the scene for a translator. Include tone, speaker, and emotional state.>",
   "series_title": "<Best guess at the series name, or 'Custom Panel' if unknown>"
 }
 
-Rules:
-- Coordinates are PERCENTAGES (0-100), not pixels
-- x,y is the top-left corner of the bubble region
-- Include ALL visible text bubbles, even small ones
-- If there are no bubbles or no text, return empty bubbles array
-- The manga_context should be detailed enough for an AI translator to preserve tone
-- Extract text EXACTLY as written — do not translate it`,
+CRITICAL RULES FOR COORDINATES:
+- Ensure the bounding box tightly wraps the VISIBLE graphic bubble (the white circle/cloud), NOT just the text itself.
+- Do NOT include empty white space outside the drawn graphic bubble.
+- x,y must be the TOP-LEFT corner of the drawn bubble.
+- w,h must represent the FULL width and height of the drawn bubble.
+- All values MUST be numeric percentages (e.g., 25.5), not strings or pixels.
+- Extract text EXACTLY as written (including kanji/kana) — do not translate it.`,
       },
       {
         role: "user",
         content: [
           {
             type: "text",
-            text: "Analyze this manga panel. Extract all speech bubbles with their positions and text. Infer the emotional context for translation.",
+            text: "Analyze this manga panel. Extract all speech bubbles with highly accurate, tight bounding box coordinates (as percentages) and their original text. Infer the emotional context for translation.",
           },
           {
             type: "image_url",

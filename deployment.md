@@ -44,7 +44,7 @@ On the *Configure Project* page, scroll down to the **Environment Variables** se
 1. Vercel will build your application, executing a final TypeScript check (`tsc`) and a Production Build (`next build`).
 2. Once successful, visit the provided alias domain (e.g., `mangasync.vercel.app`).
 3. **Core Function Check Workflow:**
-   - Drop a panel image into the upload bay.
+   - Drop a panel image into the upload bay. (Note: Images are processed flawlessly via zero-storage in-memory Base64 buffers directly on Vercel Edge).
    - Verify Vision parses the image and displays bubbles.
    - Switch language contexts through the `@lingo.dev` powered UI. 
    - Press **Play Narration** — ensure the API proxy routes don't timeout (Vercel Serverless Functions have a 10s default max duration on the free Hobby tier; for long mangas, consider switching route to Edge `export const runtime = 'edge'` or Pro tier if timeouts occur).

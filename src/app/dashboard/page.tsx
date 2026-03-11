@@ -12,6 +12,7 @@ import Link from "next/link";
 /** Target language options for manga translation */
 const TARGET_LANGUAGES = [
   { code: "en", label: "English" },
+  { code: "ja", label: "Japanese" },
   { code: "es", label: "Spanish" },
   { code: "fr", label: "French" },
 ];
