@@ -98,8 +98,8 @@ MangaSync ships with 3 demo manga panels:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/mangasync.git
-cd mangasync
+git clone https://github.com/iamartyaa/MangaSync.git
+cd MangaSync
 
 # Install dependencies
 npm install
