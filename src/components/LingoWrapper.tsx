@@ -10,16 +10,21 @@ import { useRouter } from "next/navigation";
  */
 export default function LingoWrapper({
   children,
+  initialLocale = "en",
 }: {
   children: React.ReactNode;
+  initialLocale?: any;
 }) {
   const router = useRouter();
 
+  // Disable Lingo widget in production builds
+  const isDev = process.env.NODE_ENV !== "production";
+
   return (
     <LingoProvider
-      initialLocale="en"
+      initialLocale={initialLocale}
       router={router}
-      devWidget={{ enabled: true, position: "bottom-right" }}
+      devWidget={{ enabled: isDev, position: "bottom-right" }}
     >
       {children}
     </LingoProvider>

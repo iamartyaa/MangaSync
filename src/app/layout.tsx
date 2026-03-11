@@ -21,6 +21,8 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+import { getServerLocale } from "@lingo.dev/compiler/virtual/locale/server";
+
 export const metadata: Metadata = {
   title: "MangaSync — AI Manga Localization & Narration Engine",
   description:
@@ -36,17 +38,20 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Rely on Lingo.dev's generated server virtual module for exact cookie matching
+  const initialLocale = await getServerLocale();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={initialLocale} suppressHydrationWarning>
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <LingoWrapper>{children}</LingoWrapper>
+        <LingoWrapper initialLocale={initialLocale}>{children}</LingoWrapper>
       </body>
     </html>
   );
