@@ -49,6 +49,7 @@ export default async function RootLayout({
   return (
     <html lang={initialLocale} suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <LingoWrapper initialLocale={initialLocale}>{children}</LingoWrapper>
