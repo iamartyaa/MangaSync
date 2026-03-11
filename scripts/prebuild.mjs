@@ -13,7 +13,7 @@
 import fs from "fs";
 import path from "path";
 
-const LOCALES = ["en", "ja", "es", "fr"]; // Do NOT include "en" (sourceLocale) as it's baked into the React bundles
+const LOCALES = ["en", "ja", "es", "fr"]; // Include "en" — the Lingo.dev client runtime fetches /translations/{locale}.json for ALL locales including the source locale
 const PUBLIC_TRANSLATIONS = path.join(process.cwd(), "public", "translations");
 const CACHE_DIR = path.join(process.cwd(), "src", "lingo", "cache");
 
