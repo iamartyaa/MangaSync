@@ -1,0 +1,32 @@
+{
+  "version": 0.1,
+  "locale": "fr",
+  "entries": {
+    "c61a7c885dbb": "Téléchargez votre propre planche",
+    "4be3bba8c29c": "Déposez une case de manga — GPT-4o Vision détecte automatiquement les bulles",
+    "114ee7080a04": "ou cliquez pour parcourir · JPG, PNG, WebP · Max 10 Mo",
+    "5186ca64400d": "✓",
+    "66bcdac6ba47": "{expression0} · {expression1} bulle{expression2} trouvée(s)",
+    "6573a999984f": "Télécharger une autre planche",
+    "272212c1bd13": "✗ Erreur :",
+    "6cc2bca41a19": "Réessayer",
+    "b3014a75c992": "M",
+    "88afc79aba97": "MangaSync",
+    "458b48dc069f": "/ Tableau de bord",
+    "365c1110616a": "Studio de traduction",
+    "f8cc2af798e8": "Sélectionnez une planche de démonstration ou téléchargez la vôtre — GPT-4o Vision détecte les bulles, Lingo.dev traduit avec tout le contexte.",
+    "c46005063319": "Planche de démonstration",
+    "1920c2fee7a8": "Vos planches téléchargées",
+    "4c16ff4e5ff5": "Téléchargement personnalisé",
+    "75364d89bfd3": "GPT-4o Vision",
+    "482d2a9ecc78": "Contrôles de traduction",
+    "b88edc78e0ff": "Langue cible",
+    "930511e03f18": "<span0>⟳</span0> Traduction en cours...",
+    "c58b50214fe8": "✓ Traduction terminée — {expression0} bulle(s) traduite(s)",
+    "582a8555a7fc": "✗ {error}",
+    "a947024e0caf": "Texte original",
+    "c60611164bcd": "📖",
+    "332fb61c5ba6": "Sélectionnez une planche pour commencer",
+    "b7708c7ec6fa": "Choisissez une planche de démonstration ou téléchargez la vôtre pour démarrer le moteur de traduction et de narration."
+  }
+}

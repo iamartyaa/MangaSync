@@ -42,5 +42,4 @@ yarn-error.log*
 next-env.d.ts
 ts_error.txt
 /public/uploads/
-/src/lingo/cache/
 src/lingo/translation-server.log
