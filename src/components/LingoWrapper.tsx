@@ -6,14 +6,17 @@ import { useRouter } from "next/navigation";
 /**
  * Client-side wrapper for LingoProvider.
  * Passes the Next.js router to enable Server Component re-rendering
- * on locale change.
+ * on locale change, and initialTranslations so Client Components can
+ * render translated text without a client-side fetch.
  */
 export default function LingoWrapper({
   children,
   initialLocale = "en",
+  initialTranslations,
 }: {
   children: React.ReactNode;
   initialLocale?: any;
+  initialTranslations?: Record<string, string>;
 }) {
   const router = useRouter();
 
@@ -23,6 +26,7 @@ export default function LingoWrapper({
   return (
     <LingoProvider
       initialLocale={initialLocale}
+      initialTranslations={initialTranslations}
       router={router}
       devWidget={{ enabled: isDev, position: "bottom-right" }}
     >
