@@ -35,6 +35,23 @@
     "cd1a5332722d": "🎙️ Generating all speech audio ({expression0}%)... Please wait",
     "7f13db3499a3": "🔊 Playing {expression0} of {expression1}",
     "9d8a2829bdbd": "✗ {error}",
-    "060d6f910196": "MangaSync — AI Manga Localization & Narration Engine"
+    "060d6f910196": "MangaSync — AI Manga Localization & Narration Engine",
+    "ddec1dd819e5": "M",
+    "52d2eab82370": "MangaSync",
+    "da4b498ad32d": "Powered by Lingo.dev",
+    "4f40cbf24bc3": "Translate. <br0></br0><span0>Narrate.</span0><br1></br1> Publish.",
+    "cf1186ac6220": "The AI-powered manga localization engine that translates speech bubbles with full character context, overlays them onto panels, and generates narrated playback — all in seconds.",
+    "ca16d2ef8c93": "Launch Dashboard →",
+    "7b361a6e71be": "Learn About Lingo.dev",
+    "8ccff1ed2cfa": "🌐",
+    "3010788fe2bf": "Context-Aware Translation",
+    "903a5d9f8195": "Powered by Lingo.dev SDK with MCP-style context prompts. Every translation preserves the character's voice, the series tone, and the emotional weight of the scene.",
+    "bf4f503a3096": "🖼️",
+    "47628f2b1e36": "Live Bubble Overlay",
+    "18bb3139548a": "Translated text is dynamically overlaid onto manga panels with precise bounding-box positioning. Watch the translation appear in real-time with smooth animations.",
+    "795de3de5816": "🎙️",
+    "2b51a9c9879d": "AI Narration Engine",
+    "8f47aecbd22f": "One-click narrated playback using Web Speech synthesis. Each bubble highlights in sync as the narration reads the translated dialogue — ready for YouTube export.",
+    "bb23165689c9": "Built for the Lingo.dev Hackathon · MangaSync © 2026"
   }
 }
