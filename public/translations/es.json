@@ -1,0 +1,32 @@
+{
+  "version": 0.1,
+  "locale": "es",
+  "entries": {
+    "c61a7c885dbb": "Sube tu propio panel",
+    "4be3bba8c29c": "Suelta cualquier panel de manga — GPT-4o Vision detecta automáticamente los bocadillos",
+    "114ee7080a04": "o haz clic para buscar · JPG, PNG, WebP · Máx 10MB",
+    "5186ca64400d": "✓",
+    "66bcdac6ba47": "Se encontró {expression0} · {expression1} bocadillo {expression2}",
+    "6573a999984f": "Subir otro panel",
+    "272212c1bd13": "✗ Error:",
+    "6cc2bca41a19": "Intentar de nuevo",
+    "b3014a75c992": "M",
+    "88afc79aba97": "MangaSync",
+    "458b48dc069f": "/ Panel principal",
+    "365c1110616a": "Estudio de traducción",
+    "f8cc2af798e8": "Selecciona un panel de demostración o sube uno propio — GPT-4o Vision detecta los bocadillos, Lingo.dev traduce con todo el contexto.",
+    "c46005063319": "Paneles de demostración",
+    "1920c2fee7a8": "Tus paneles subidos",
+    "4c16ff4e5ff5": "Subida personalizada",
+    "75364d89bfd3": "GPT-4o Vision",
+    "482d2a9ecc78": "Controles de traducción",
+    "b88edc78e0ff": "Idioma de destino",
+    "930511e03f18": "<span0>⟳</span0> Traduciendo...",
+    "c58b50214fe8": "✓ Traducción completa — {expression0} bocadillos traducidos",
+    "582a8555a7fc": "✗ {error}",
+    "a947024e0caf": "Texto original",
+    "c60611164bcd": "📖",
+    "332fb61c5ba6": "Selecciona un panel para comenzar",
+    "b7708c7ec6fa": "Elige un panel de demostración o sube el tuyo para empezar el motor de traducción y narración."
+  }
+}
