@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { Bubble } from "@/data/mockPanels";
 
 interface NarrationPlayerProps {
@@ -12,28 +12,34 @@ interface NarrationPlayerProps {
   hasTranslations: boolean;
 }
 
-/** OpenAI TTS voice options with personality descriptions */
-const VOICES = [
-  { id: "nova", label: "Nova", desc: "Warm & expressive" },
-  { id: "onyx", label: "Onyx", desc: "Deep & authoritative" },
-  { id: "fable", label: "Fable", desc: "Storytelling" },
-  { id: "shimmer", label: "Shimmer", desc: "Clear & bright" },
-  { id: "echo", label: "Echo", desc: "Smooth & calm" },
-  { id: "alloy", label: "Alloy", desc: "Neutral & balanced" },
-] as const;
+// Voices are restricted in the backend to 'fable'.
+
+/**
+ * Sort bubbles in traditional manga reading order: top-to-bottom, right-to-left.
+ * Groups bubbles into rows by similar Y position, then sorts right-to-left
+ * within each row.
+ */
+function sortBubblesInReadingOrder(bubbles: Bubble[]): Bubble[] {
+  const ROW_THRESHOLD = 15; // % — bubbles within this Y range are considered on the same row
+
+  const sorted = [...bubbles].sort((a, b) => {
+    // If bubbles are on roughly the same row (within threshold)
+    if (Math.abs(a.y - b.y) < ROW_THRESHOLD) {
+      return b.x - a.x; // right to left (higher X comes first)
+    }
+    return a.y - b.y; // top to bottom
+  });
+
+  return sorted;
+}
 
 /**
  * NarrationPlayer — OpenAI TTS HD Narration Engine
  *
- * Converts translated manga dialogue into natural, human-like speech
- * using OpenAI's tts-1-hd model. Plays bubbles sequentially with
- * synchronized highlighting on the manga panel.
+ * Pre-generates ALL audio for every bubble FIRST, then plays them
+ * back-to-back seamlessly with synchronized bubble highlighting.
  *
- * Features:
- * - 6 AI voice options (Nova, Onyx, Fable, Shimmer, Echo, Alloy)
- * - Sequential playback with bubble-by-bubble highlighting
- * - Progress bar tracking current bubble
- * - Smooth audio transitions between bubbles
+ * Reading order: left-to-right, top-to-bottom (standard reading flow).
  */
 export default function NarrationPlayer({
   bubbles,
@@ -43,15 +49,22 @@ export default function NarrationPlayer({
   hasTranslations,
 }: NarrationPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
   const [currentBubbleIndex, setCurrentBubbleIndex] = useState(-1);
-  const [selectedVoice, setSelectedVoice] = useState("nova");
+
   const [error, setError] = useState<string | null>(null);
 
   // Refs for playback control
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef(false);
   const audioUrlsRef = useRef<string[]>([]);
+
+  // Sort bubbles in reading order
+  const orderedBubbles = useMemo(
+    () => sortBubblesInReadingOrder(bubbles),
+    [bubbles]
+  );
 
   // Clean up audio URLs on unmount
   useEffect(() => {
@@ -69,7 +82,7 @@ export default function NarrationPlayer({
       const res = await fetch("/api/narrate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: selectedVoice }),
+        body: JSON.stringify({ text }),
       });
 
       if (!res.ok) {
@@ -82,42 +95,77 @@ export default function NarrationPlayer({
       audioUrlsRef.current.push(url);
       return url;
     },
-    [selectedVoice]
+    []
   );
 
   /**
-   * Play narration for all translated bubbles sequentially.
-   * Each bubble is highlighted as its audio plays.
+   * Pre-generate all audio, then play back-to-back.
+   * Phase 1: Generate audio for every bubble
+   * Phase 2: Play sequentially with bubble highlighting
    */
   const handlePlay = useCallback(async () => {
-    if (!hasTranslations || bubbles.length === 0) return;
+    if (!hasTranslations || orderedBubbles.length === 0) return;
 
-    setIsPlaying(true);
     setError(null);
     abortRef.current = false;
 
+    // ── Phase 1: Pre-generate all audio ──────────────────────────────
+    setIsGenerating(true);
+    setGenerationProgress(0);
+
+    const audioUrls: string[] = [];
+    const bubblesToNarrate = orderedBubbles.filter(
+      (b) => translations[b.id]?.trim()
+    );
+
+    if (bubblesToNarrate.length === 0) {
+      setIsGenerating(false);
+      return;
+    }
+
     try {
-      for (let i = 0; i < bubbles.length; i++) {
+      for (let i = 0; i < bubblesToNarrate.length; i++) {
+        if (abortRef.current) {
+          setIsGenerating(false);
+          return;
+        }
+
+        const bubble = bubblesToNarrate[i];
+        const text = translations[bubble.id];
+        const audioUrl = await generateAudio(text);
+        audioUrls.push(audioUrl);
+        setGenerationProgress(((i + 1) / bubblesToNarrate.length) * 100);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Audio generation failed"
+      );
+      setIsGenerating(false);
+      return;
+    }
+
+    if (abortRef.current) {
+      setIsGenerating(false);
+      return;
+    }
+
+    // ── Phase 2: Sequential playback ─────────────────────────────────
+    setIsGenerating(false);
+    setIsPlaying(true);
+
+    try {
+      for (let i = 0; i < bubblesToNarrate.length; i++) {
         if (abortRef.current) break;
 
-        const bubble = bubbles[i];
-        const text = translations[bubble.id];
-        if (!text) continue;
+        const bubble = bubblesToNarrate[i];
 
-        // Update UI state
+        // Highlight current bubble
         setCurrentBubbleIndex(i);
         onBubbleStart(bubble.id);
 
-        // Generate audio
-        setIsLoading(true);
-        const audioUrl = await generateAudio(text);
-        setIsLoading(false);
-
-        if (abortRef.current) break;
-
-        // Play audio and wait for completion
+        // Play pre-generated audio
         await new Promise<void>((resolve, reject) => {
-          const audio = new Audio(audioUrl);
+          const audio = new Audio(audioUrls[i]);
           audioRef.current = audio;
 
           audio.onended = () => resolve();
@@ -126,9 +174,9 @@ export default function NarrationPlayer({
           audio.play().catch(reject);
         });
 
-        // Small pause between bubbles for natural flow
-        if (i < bubbles.length - 1 && !abortRef.current) {
-          await new Promise((r) => setTimeout(r, 400));
+        // Brief pause between bubbles for natural flow
+        if (i < bubblesToNarrate.length - 1 && !abortRef.current) {
+          await new Promise((r) => setTimeout(r, 300));
         }
       }
     } catch (err) {
@@ -139,12 +187,11 @@ export default function NarrationPlayer({
       }
     } finally {
       setIsPlaying(false);
-      setIsLoading(false);
       setCurrentBubbleIndex(-1);
       onNarrationEnd();
     }
   }, [
-    bubbles,
+    orderedBubbles,
     translations,
     hasTranslations,
     generateAudio,
@@ -152,7 +199,7 @@ export default function NarrationPlayer({
     onNarrationEnd,
   ]);
 
-  /** Stop current narration */
+  /** Stop current narration or generation */
   const handleStop = useCallback(() => {
     abortRef.current = true;
     if (audioRef.current) {
@@ -161,16 +208,22 @@ export default function NarrationPlayer({
       audioRef.current = null;
     }
     setIsPlaying(false);
-    setIsLoading(false);
+    setIsGenerating(false);
+    setGenerationProgress(0);
     setCurrentBubbleIndex(-1);
     onNarrationEnd();
   }, [onNarrationEnd]);
 
   // ── Progress calculation ────────────────────────────────────────────
-  const progress =
-    bubbles.length > 0 && currentBubbleIndex >= 0
-      ? ((currentBubbleIndex + 1) / bubbles.length) * 100
+  const bubblesToNarrate = orderedBubbles.filter(
+    (b) => translations[b.id]?.trim()
+  );
+  const playbackProgress =
+    bubblesToNarrate.length > 0 && currentBubbleIndex >= 0
+      ? ((currentBubbleIndex + 1) / bubblesToNarrate.length) * 100
       : 0;
+
+  const isActive = isPlaying || isGenerating;
 
   return (
     <div className="brutal-border bg-manga-white p-4 brutal-shadow">
@@ -183,66 +236,47 @@ export default function NarrationPlayer({
         </span>
       </div>
 
-      {/* Voice selector */}
-      <div className="mb-3">
-        <label className="text-xs font-mono text-manga-muted uppercase tracking-wider block mb-1.5">
-          AI Voice
-        </label>
-        <div className="grid grid-cols-3 gap-1.5">
-          {VOICES.map((voice) => (
-            <button
-              key={voice.id}
-              onClick={() => setSelectedVoice(voice.id)}
-              disabled={isPlaying}
-              className={`
-                px-2 py-1.5 brutal-border text-left transition-all duration-150 cursor-pointer
-                ${
-                  selectedVoice === voice.id
-                    ? "bg-manga-purple text-manga-white"
-                    : "bg-manga-cream text-manga-black hover:bg-manga-purple/10"
-                }
-                ${isPlaying ? "opacity-50 cursor-not-allowed" : ""}
-              `}
-            >
-              <span className="font-[family-name:var(--font-display)] font-bold text-xs block">
-                {voice.label}
-              </span>
-              <span
-                className={`text-[9px] font-mono ${
-                  selectedVoice === voice.id
-                    ? "text-manga-white/70"
-                    : "text-manga-muted"
-                }`}
-              >
-                {voice.desc}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Progress bar */}
       <div className="w-full h-2 brutal-border bg-manga-gray overflow-hidden mb-3">
         <div
           className={`h-full transition-all duration-500 ease-out ${
-            isLoading ? "bg-manga-yellow animate-pulse" : "bg-manga-red"
+            isGenerating
+              ? "bg-manga-yellow"
+              : "bg-manga-red"
           }`}
-          style={{ width: `${progress}%` }}
+          style={{
+            width: `${isGenerating ? generationProgress : playbackProgress}%`,
+          }}
         />
       </div>
 
       {/* Status text */}
+      {isGenerating && (
+        <p className="text-xs font-mono text-manga-muted mb-3 text-center animate-pulse">
+          🎙️ Generating all speech audio ({Math.round(generationProgress)}%)...
+          Please wait
+        </p>
+      )}
       {isPlaying && (
         <p className="text-xs font-mono text-manga-muted mb-3 text-center">
-          {isLoading
-            ? `Generating speech for bubble ${currentBubbleIndex + 1}/${bubbles.length}...`
-            : `Playing ${currentBubbleIndex + 1} of ${bubbles.length}`}
+          🔊 Playing {currentBubbleIndex + 1} of {bubblesToNarrate.length}
+        </p>
+      )}
+
+      {/* Reading order info */}
+      {hasTranslations && !isActive && (
+        <p className="text-[10px] font-mono text-manga-muted mb-3 text-center">
+          Reading order: top → bottom, right → left (manga style) ·{" "}
+          {bubblesToNarrate.length} bubble
+          {bubblesToNarrate.length !== 1 ? "s" : ""}
         </p>
       )}
 
       {/* Play/Stop button */}
       <button
-        onClick={isPlaying ? handleStop : handlePlay}
+        onClick={isActive ? handleStop : handlePlay}
         disabled={!hasTranslations}
         className={`
           w-full py-3 brutal-border-thick font-[family-name:var(--font-display)]
@@ -250,7 +284,7 @@ export default function NarrationPlayer({
           ${
             !hasTranslations
               ? "bg-manga-gray text-manga-muted cursor-not-allowed"
-              : isPlaying
+              : isActive
               ? "bg-manga-dark text-manga-red brutal-shadow cursor-pointer"
               : "bg-manga-yellow text-manga-black brutal-shadow-yellow brutal-hover cursor-pointer"
           }
@@ -258,6 +292,8 @@ export default function NarrationPlayer({
       >
         {!hasTranslations
           ? "Translate a panel first to enable narration"
+          : isGenerating
+          ? "■ Cancel Generation"
           : isPlaying
           ? "■ Stop Narration"
           : "► Play Narration"}

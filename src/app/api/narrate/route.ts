@@ -8,10 +8,8 @@
  * Request body: { text: string, voice?: string }
  * Response: Audio stream (audio/mpeg)
  *
- * Available voices: alloy, echo, fable, onyx, nova, shimmer
- * - "nova" — warm, engaging female voice (great for narration)
- * - "onyx" — deep, authoritative male voice (great for intense scenes)
- * - "fable" — expressive, storytelling voice
+ * Available voice is fixed to 'fable' — an expressive, storytelling voice 
+ * suited perfectly for the manga context narration.
  */
 
 import { NextResponse } from "next/server";
@@ -33,7 +31,7 @@ function getOpenAI(): OpenAI {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { text, voice = "nova" } = body;
+    const { text } = body;
 
     if (!text || typeof text !== "string") {
       return NextResponse.json(
@@ -44,10 +42,10 @@ export async function POST(request: Request) {
 
     const openai = getOpenAI();
 
-    // Generate speech using OpenAI TTS
+    // ── Generation: OpenAI TTS HD ──────────────────────────────────────
     const response = await openai.audio.speech.create({
       model: "tts-1-hd",
-      voice: voice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
+      voice: "fable",
       input: text,
       speed: 1.0,
     });
