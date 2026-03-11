@@ -9,8 +9,6 @@
  */
 
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { randomUUID } from "crypto";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -50,22 +48,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate unique filename
+    // Generate unique filename identifier for reference (even though it's not written)
     const ext = file.name.split(".").pop() || "jpg";
     const filename = `panel-${randomUUID().slice(0, 8)}.${ext}`;
 
-    // Ensure uploads directory exists
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-
-    // Write file to disk
+    // Convert to Base64 directly in memory!
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const filepath = path.join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
+    
+    // Create the Data URI
+    const base64Data = `data:${file.type};base64,${buffer.toString("base64")}`;
 
     return NextResponse.json({
-      imageUrl: `/uploads/${filename}`,
+      imageUrl: base64Data, // Now passing the Base64 URI instead of a public path
       filename,
     });
   } catch (error) {

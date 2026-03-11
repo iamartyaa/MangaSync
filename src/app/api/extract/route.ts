@@ -42,8 +42,11 @@ export async function POST(request: Request) {
     if (imageBase64) {
       // Directly provided base64 data
       base64Data = imageBase64;
+    } else if (imageUrl.startsWith("data:image/")) {
+      // Upload route now returns a Base64 string masquerading as the URL!
+      base64Data = imageUrl;
     } else {
-      // Read the uploaded file from public/ and convert to base64
+      // Legacy disk-read path just in case
       const filePath = path.join(process.cwd(), "public", imageUrl);
       const fileBuffer = await readFile(filePath);
 
